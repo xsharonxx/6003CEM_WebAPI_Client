@@ -17,6 +17,7 @@ export default function SavedCoins() {
   const [newCoin, setNewCoin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [searchError, setSearchError] = useState('');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -26,17 +27,38 @@ export default function SavedCoins() {
   }, [token, navigate]);
 
   useEffect(() => {
-    // If only whitespace), reset the “Coin Details” state
+    // If only whitespace), reset the "Coin Details" state
     if (filter.trim() === '') {
       fetchSavedCoins();
+      setSearchError('');
     }
   }, [filter]);
 
   const handleSearchSubmit = async (e) => {
-    e.preventDefault();      // prevent page reload
+    e.preventDefault();
     const trimmed = filter.trim();
     if (!trimmed) return;
-    await fetchSavedCoins(); // call the actual fetch function
+    setLoading(true);
+    setSearchError('');
+    try {
+      const res = await api.get('/coins', {
+        params: {
+          filter: trimmed,
+          sortBy: sortBy || undefined
+        }
+      });
+      if (res.data.length === 0) {
+        setSearchError(`Coin not found for "${trimmed}"`);
+      } else {
+        setSearchError('');
+      }
+      // Always fetch and show all favorites below
+      await fetchSavedCoins();
+    } catch (err) {
+      setSearchError('Failed to search for coin.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchSavedCoins = async () => {
@@ -70,7 +92,7 @@ export default function SavedCoins() {
     fetchSavedCoins();
   }, [token, sortBy, logout, navigate]);
 
-  // Handler for “Explore Coins” button when no favorites
+  // Handler for "Explore Coins" button when no favorites
   const handleExplore = () => {
     navigate('/');
   };
@@ -158,10 +180,11 @@ export default function SavedCoins() {
 
  
       {error && <p className="error-text">{error}</p>}
+      {searchError && <p className="error-text">{searchError}</p>}
       {loading && <LoadingSpinner />}
 
 
-      {coins.length === 0 && !loading && (
+      {coins.length === 0 && !loading && !searchError && (
         <div className="empty-state">      
           <h2 className="empty-title">No favorites yet</h2>
           <p className="empty-text">

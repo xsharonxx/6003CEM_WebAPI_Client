@@ -4,11 +4,8 @@ import axios from 'axios';
 const token = localStorage.getItem('token');
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: token ? `Bearer ${token}` : ''
-  }
+  baseURL: process.env.REACT_APP_API_BASE_URL,
+  withCredentials: true, // optional
 });
 
 // Interceptor: always attach updated token (if user logs in)
